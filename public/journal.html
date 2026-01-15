@@ -90,7 +90,7 @@
         <div class="modal" style="max-width: 800px;">
             <div class="modal-header">
                 <h2 id="modal-title">New Journal Entry</h2>
-                <button class="modal-close" onclick="closeModal()">&times;</button>
+                <button class="modal-close">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="entry-form">
@@ -189,6 +189,7 @@
             // Modal buttons
             document.getElementById('btn-cancel-entry').addEventListener('click', closeModal);
             document.getElementById('btn-save-entry').addEventListener('click', saveEntry);
+            document.querySelector('#entry-modal .modal-close').addEventListener('click', closeModal);
             
             // Editor toolbar buttons
             document.querySelectorAll('.editor-btn[data-format]').forEach(btn => {

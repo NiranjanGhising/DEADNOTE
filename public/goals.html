@@ -66,20 +66,41 @@
                 </button>
             </div>
 
+            <!-- View Toggle -->
+            <div class="view-toggle" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                <button class="btn btn-secondary active" id="btn-list-view">📋 List View</button>
+                <button class="btn btn-secondary" id="btn-calendar-view">📅 Calendar View</button>
+            </div>
+
             <!-- Tabs -->
-            <div class="tabs">
+            <div class="tabs" id="goals-tabs">
                 <div class="tab active" data-filter="">All Goals</div>
                 <div class="tab" data-filter="short-term">Short-term</div>
                 <div class="tab" data-filter="long-term">Long-term</div>
                 <div class="tab" data-filter="completed">Completed</div>
             </div>
 
-            <!-- Goals Container -->
+            <!-- Goals Container (List View) -->
             <div id="goals-container">
                 <div class="empty-state">
                     <div class="icon">🎯</div>
                     <h3>No goals yet</h3>
                     <p>Start your journey by setting your first goal</p>
+                </div>
+            </div>
+
+            <!-- Calendar View -->
+            <div id="calendar-container" style="display: none;">
+                <div class="calendar-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <button class="btn btn-ghost" id="btn-prev-month">◀ Prev</button>
+                    <h3 id="calendar-month-year" style="margin: 0;"></h3>
+                    <button class="btn btn-ghost" id="btn-next-month">Next ▶</button>
+                </div>
+                <div class="calendar-grid" id="calendar-grid"></div>
+                <div class="calendar-legend" style="margin-top: 1rem; display: flex; gap: 1.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+                    <span>🟢 Short-term</span>
+                    <span>🔵 Long-term</span>
+                    <span>✅ Completed</span>
                 </div>
             </div>
 
@@ -173,6 +194,8 @@
     <script>
         let goals = [];
         let currentFilter = '';
+        let currentView = 'list';
+        let calendarDate = new Date();
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
@@ -201,6 +224,14 @@
             document.getElementById('progress-slider').addEventListener('input', function() {
                 document.getElementById('progress-value').textContent = this.value;
             });
+            
+            // View toggle buttons
+            document.getElementById('btn-list-view').addEventListener('click', () => switchView('list'));
+            document.getElementById('btn-calendar-view').addEventListener('click', () => switchView('calendar'));
+            
+            // Calendar navigation
+            document.getElementById('btn-prev-month').addEventListener('click', () => navigateMonth(-1));
+            document.getElementById('btn-next-month').addEventListener('click', () => navigateMonth(1));
         });
 
         // Setup tabs
@@ -250,7 +281,11 @@
                 return;
             }
 
-            container.innerHTML = filtered.map(goal => `
+            container.innerHTML = filtered.map(goal => {
+                const daysRemaining = goal.target_date ? getDaysRemaining(goal.target_date) : null;
+                const daysClass = daysRemaining !== null ? (daysRemaining < 0 ? 'overdue' : daysRemaining <= 7 ? 'urgent' : 'normal') : '';
+                
+                return `
                 <div class="goal-card">
                     <div class="goal-header">
                         <div>
@@ -265,6 +300,13 @@
                         </div>
                     </div>
 
+                    ${daysRemaining !== null && goal.status !== 'completed' ? `
+                        <div class="days-countdown ${daysClass}" style="margin: 0.75rem 0; padding: 0.5rem 0.75rem; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9rem;">
+                            <span>${daysRemaining < 0 ? '⚠️' : daysRemaining <= 7 ? '🔥' : '⏰'}</span>
+                            <span>${daysRemaining < 0 ? `${Math.abs(daysRemaining)} days overdue` : daysRemaining === 0 ? 'Due today!' : daysRemaining === 1 ? '1 day remaining' : `${daysRemaining} days remaining`}</span>
+                        </div>
+                    ` : ''}
+
                     <div class="goal-progress">
                         <div class="progress-bar">
                             <div class="progress-fill" style="width: ${goal.progress}%"></div>
@@ -273,7 +315,8 @@
                             <span>${goal.progress}% complete</span>
                             ${goal.target_date ? `<span>Target: ${formatDate(goal.target_date)}</span>` : ''}
                         </div>
-                    </div>
+                    </div>`;
+            }).join('')
 
                     ${goal.milestones && goal.milestones.length > 0 ? `
                         <div class="milestones">
@@ -296,7 +339,7 @@
                         </div>
                     ` : ''}
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         // Open modal for new goal
@@ -518,6 +561,99 @@
                 day: 'numeric', 
                 year: 'numeric' 
             });
+        }
+
+        // Get days remaining until target date
+        function getDaysRemaining(targetDate) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const target = new Date(targetDate);
+            target.setHours(0, 0, 0, 0);
+            const diffTime = target - today;
+            return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        // Switch between list and calendar view
+        function switchView(view) {
+            currentView = view;
+            
+            // Update button states
+            document.getElementById('btn-list-view').classList.toggle('active', view === 'list');
+            document.getElementById('btn-calendar-view').classList.toggle('active', view === 'calendar');
+            
+            // Toggle containers
+            document.getElementById('goals-container').style.display = view === 'list' ? 'block' : 'none';
+            document.getElementById('goals-tabs').style.display = view === 'list' ? 'flex' : 'none';
+            document.getElementById('calendar-container').style.display = view === 'calendar' ? 'block' : 'none';
+            
+            if (view === 'calendar') {
+                renderCalendar();
+            }
+        }
+
+        // Navigate calendar months
+        function navigateMonth(direction) {
+            calendarDate.setMonth(calendarDate.getMonth() + direction);
+            renderCalendar();
+        }
+
+        // Render calendar view
+        function renderCalendar() {
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            
+            // Update header
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                               'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('calendar-month-year').textContent = `${monthNames[month]} ${year}`;
+            
+            // Get first day of month and total days
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            // Get goals with target dates in this month
+            const monthGoals = goals.filter(g => {
+                if (!g.target_date) return false;
+                const d = new Date(g.target_date);
+                return d.getFullYear() === year && d.getMonth() === month;
+            });
+            
+            // Build calendar grid
+            let html = `
+                <div class="calendar-weekdays" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.25rem; margin-bottom: 0.5rem; text-align: center; font-size: 0.8rem; color: var(--text-muted);">
+                    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                </div>
+                <div class="calendar-days" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.25rem;">
+            `;
+            
+            // Empty cells for days before first day
+            for (let i = 0; i < firstDay; i++) {
+                html += `<div class="calendar-day empty" style="min-height: 80px;"></div>`;
+            }
+            
+            // Days of the month
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayGoals = monthGoals.filter(g => g.target_date === dateStr);
+                const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
+                
+                html += `
+                    <div class="calendar-day" style="min-height: 80px; padding: 0.4rem; border: 1px solid var(--border-color); border-radius: 8px; background: ${isToday ? 'rgba(59, 130, 246, 0.15)' : 'var(--card-bg)'}; ${isToday ? 'border-color: var(--primary);' : ''}">
+                        <div style="font-weight: ${isToday ? '700' : '500'}; font-size: 0.85rem; color: ${isToday ? 'var(--primary)' : 'var(--text-primary)'};">${day}</div>
+                        <div style="margin-top: 0.25rem; display: flex; flex-direction: column; gap: 0.2rem;">
+                            ${dayGoals.map(g => `
+                                <div class="calendar-goal" onclick="editGoal(${g.id})" style="font-size: 0.7rem; padding: 0.2rem 0.4rem; border-radius: 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: ${g.status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : g.goal_type === 'short-term' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(59, 130, 246, 0.15)'}; color: ${g.status === 'completed' ? '#22c55e' : g.goal_type === 'short-term' ? '#4ade80' : '#60a5fa'};" title="${escapeHtml(g.title)}">
+                                    ${g.status === 'completed' ? '✅' : g.goal_type === 'short-term' ? '🟢' : '🔵'} ${escapeHtml(g.title)}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            document.getElementById('calendar-grid').innerHTML = html;
         }
     </script>
 </body>

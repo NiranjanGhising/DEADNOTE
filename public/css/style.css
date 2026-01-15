@@ -589,6 +589,29 @@ label {
 .goal-type.short-term { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
 .goal-type.long-term { background: rgba(139, 92, 246, 0.25); color: #c4b5fd; }
 
+/* Days Countdown */
+.days-countdown {
+	font-weight: 500;
+}
+.days-countdown.normal {
+	background: rgba(59, 130, 246, 0.15);
+	color: #93c5fd;
+}
+.days-countdown.urgent {
+	background: rgba(251, 191, 36, 0.2);
+	color: #fcd34d;
+}
+.days-countdown.overdue {
+	background: rgba(239, 68, 68, 0.2);
+	color: #fca5a5;
+}
+
+/* View Toggle */
+.view-toggle .btn.active {
+	background: var(--primary);
+	color: white;
+}
+
 .goal-progress {
 	margin-top: 1rem;
 }
@@ -924,6 +947,9 @@ label {
 .modal {
 	width: 100%;
 	max-width: 600px;
+	max-height: 90vh;
+	display: flex;
+	flex-direction: column;
 	background: rgba(15, 23, 42, 0.96);
 	border: 1px solid var(--border-color);
 	border-radius: var(--radius-lg);
@@ -953,6 +979,8 @@ label {
 
 .modal-body {
 	padding: 1.25rem;
+	overflow-y: auto;
+	flex: 1 1 auto;
 }
 
 .modal-footer {
