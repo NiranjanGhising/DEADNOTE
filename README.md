@@ -1,5 +1,6 @@
 # Personal Growth Diary
-
+## Demo
+![Dashboard demo](uploads/journal/index.png)
 Self-hosted web app for journaling, goal tracking, and daily todos. Runs on Node.js/Express, stores data in SQLite, and serves a vanilla HTML/CSS/JS frontend. Optional AI tips are available via an OpenAI API key.
 
 ## Features
@@ -122,7 +123,7 @@ npm run init-db
 npm test
 ```
 
-## 📱 Mobile Support
+## 📱 Device Support
 
 The app is fully responsive and works great on:
 - Desktop browsers
