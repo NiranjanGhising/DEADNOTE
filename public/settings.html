@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Personal Growth Diary</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="icon">📓</span>
+                <h2>Growth Diary</h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/dashboard" class="nav-item">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/journal" class="nav-item">
+                    <span class="icon">✍️</span>
+                    <span>Journal</span>
+                </a>
+                <a href="/goals" class="nav-item">
+                    <span class="icon">🎯</span>
+                    <span>Goals</span>
+                </a>
+                <a href="/todos" class="nav-item">
+                    <span class="icon">✅</span>
+                    <span>Todos</span>
+                </a>
+                <a href="/settings" class="nav-item active">
+                    <span class="icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">U</div>
+                    <span class="user-name" id="user-name">User</span>
+                    <button class="btn btn-ghost btn-sm" onclick="logout()" title="Logout">🚪</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>⚙️ Settings</h1>
+                <p>Customize your diary experience</p>
+            </div>
+
+            <!-- Notification Settings -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                    <h3>🔔 Notifications</h3>
+                </div>
+                <div class="card-body">
+                    <div class="settings-section">
+                        <div class="settings-row">
+                            <div class="settings-label">
+                                <h4>Task Reminders</h4>
+                                <p>Get notified when you have pending tasks</p>
+                            </div>
+                            <label class="toggle">
+                                <input type="checkbox" id="reminder-enabled" onchange="updateNotificationSetting('reminder_enabled', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="settings-row">
+                            <div class="settings-label">
+                                <h4>Motivational Quotes</h4>
+                                <p>Receive random motivational notifications</p>
+                            </div>
+                            <label class="toggle">
+                                <input type="checkbox" id="motivation-enabled" onchange="updateNotificationSetting('motivation_enabled', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="settings-row">
+                            <div class="settings-label">
+                                <h4>Pending Task Threshold</h4>
+                                <p>Notify when pending tasks exceed this number</p>
+                            </div>
+                            <select class="form-control" id="pending-threshold" style="width: auto;" 
+                                    onchange="updateNotificationSetting('pending_threshold', parseInt(this.value))">
+                                <option value="2">2 tasks</option>
+                                <option value="3">3 tasks</option>
+                                <option value="5">5 tasks</option>
+                                <option value="10">10 tasks</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Settings -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                    <h3>👤 Account</h3>
+                </div>
+                <div class="card-body">
+                    <div class="settings-section">
+                        <div class="settings-row">
+                            <div class="settings-label">
+                                <h4>Username</h4>
+                                <p id="current-username">Loading...</p>
+                            </div>
+                        </div>
+
+                        <div class="settings-row">
+                            <div class="settings-label">
+                                <h4>Change Password</h4>
+                                <p>Update your account password</p>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" onclick="openPasswordModal()">
+                                Change Password
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Management -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                    <h3>💾 Data Management</h3>
+                </div>
+                <div class="card-body">
+                    <div class="settings-section">
+                        <div class="settings-row">
+                            <div class="settings-label">
+                                <h4>Export Data</h4>
+                                <p>Download all your data as JSON</p>
+                            </div>
+                            <button class="btn btn-secondary btn-sm" onclick="exportData()">
+                                📥 Export JSON
+                            </button>
+                        </div>
+
+                        <div class="settings-row">
+                            <div class="settings-label">
+                                <h4>Data Statistics</h4>
+                                <p id="data-stats">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Settings -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                    <h3>🤖 AI Features</h3>
+                </div>
+                <div class="card-body">
+                    <div class="settings-section">
+                        <div class="settings-row">
+                            <div class="settings-label">
+                                <h4>OpenAI API Key</h4>
+                                <p>Add your API key for personalized AI tips (optional)</p>
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <span>ℹ️</span>
+                            <div>
+                                <p>To enable AI-powered personalized tips, add your OpenAI API key to the <code>.env</code> file:</p>
+                                <code style="display: block; margin-top: 0.5rem; padding: 0.5rem; background: var(--bg-tertiary); border-radius: 4px;">
+                                    OPENAI_API_KEY=your_api_key_here
+                                </code>
+                                <p style="margin-top: 0.5rem;">Without an API key, you'll still get curated motivational tips.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About -->
+            <div class="card">
+                <div class="card-header">
+                    <h3>ℹ️ About</h3>
+                </div>
+                <div class="card-body">
+                    <div style="text-align: center; padding: 2rem;">
+                        <h2 style="margin-bottom: 0.5rem;">📓 Personal Growth Diary</h2>
+                        <p style="color: var(--text-secondary);">Version 1.0.0</p>
+                        <p style="margin-top: 1rem; color: var(--text-secondary);">
+                            A self-hosted diary for journaling, goal tracking, and personal productivity.
+                        </p>
+                        <p style="margin-top: 1rem;">
+                            <a href="https://github.com" target="_blank" style="color: var(--accent-primary);">
+                                ⭐ Star on GitHub
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal-overlay" id="password-modal">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Change Password</h2>
+                <button class="modal-close" onclick="closePasswordModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="password-form">
+                    <div class="form-group">
+                        <label for="current-password">Current Password</label>
+                        <input type="password" id="current-password" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">New Password</label>
+                        <input type="password" id="new-password" class="form-control" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-password">Confirm New Password</label>
+                        <input type="password" id="confirm-password" class="form-control" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePasswordModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="changePassword()">Change Password</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            loadNotificationSettings();
+            loadDataStats();
+        });
+
+        // Load notification settings
+        async function loadNotificationSettings() {
+            try {
+                const response = await fetch('/api/notifications/settings');
+                const settings = await response.json();
+
+                document.getElementById('reminder-enabled').checked = settings.reminder_enabled;
+                document.getElementById('motivation-enabled').checked = settings.motivation_enabled;
+                document.getElementById('pending-threshold').value = settings.pending_threshold;
+            } catch (error) {
+                console.error('Failed to load settings:', error);
+            }
+        }
+
+        // Update notification setting
+        async function updateNotificationSetting(key, value) {
+            try {
+                const response = await fetch('/api/notifications/settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ [key]: value })
+                });
+
+                if (response.ok) {
+                    showToast('Setting updated', 'success');
+                } else {
+                    showToast('Failed to update setting', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to update setting', 'error');
+            }
+        }
+
+        // Load data statistics
+        async function loadDataStats() {
+            try {
+                const [journalRes, goalsRes, todosRes] = await Promise.all([
+                    fetch('/api/journal'),
+                    fetch('/api/goals'),
+                    fetch('/api/todos')
+                ]);
+
+                const journals = await journalRes.json();
+                const goals = await goalsRes.json();
+                const todos = await todosRes.json();
+
+                document.getElementById('data-stats').textContent = 
+                    `${journals.length} journal entries • ${goals.length} goals • ${todos.length} todos`;
+            } catch (error) {
+                document.getElementById('data-stats').textContent = 'Failed to load stats';
+            }
+        }
+
+        // Export data
+        async function exportData() {
+            try {
+                const response = await fetch('/api/stats/export');
+                const data = await response.json();
+
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `growth-diary-export-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+
+                showToast('Data exported successfully', 'success');
+            } catch (error) {
+                showToast('Failed to export data', 'error');
+            }
+        }
+
+        // Password modal
+        function openPasswordModal() {
+            document.getElementById('password-form').reset();
+            document.getElementById('password-modal').classList.add('active');
+        }
+
+        function closePasswordModal() {
+            document.getElementById('password-modal').classList.remove('active');
+        }
+
+        // Change password
+        async function changePassword() {
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (newPassword !== confirmPassword) {
+                showToast('New passwords do not match', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+
+                if (response.ok) {
+                    showToast('Password changed successfully', 'success');
+                    closePasswordModal();
+                } else {
+                    const data = await response.json();
+                    showToast(data.error || 'Failed to change password', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to change password', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

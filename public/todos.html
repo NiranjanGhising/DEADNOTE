@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todos - Personal Growth Diary</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="icon">📓</span>
+                <h2>Growth Diary</h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/dashboard" class="nav-item">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/journal" class="nav-item">
+                    <span class="icon">✍️</span>
+                    <span>Journal</span>
+                </a>
+                <a href="/goals" class="nav-item">
+                    <span class="icon">🎯</span>
+                    <span>Goals</span>
+                </a>
+                <a href="/todos" class="nav-item active">
+                    <span class="icon">✅</span>
+                    <span>Todos</span>
+                </a>
+                <a href="/settings" class="nav-item">
+                    <span class="icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">U</div>
+                    <span class="user-name" id="user-name">User</span>
+                    <button class="btn btn-ghost btn-sm" onclick="logout()" title="Logout">🚪</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>✅ Todo List</h1>
+                <p>Plan and track your daily tasks</p>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <button class="btn btn-primary" id="btn-add-todo">
+                    ➕ Add Todo
+                </button>
+                <button class="btn btn-secondary" id="reschedule-btn" style="display: none;">
+                    📅 Reschedule Overdue
+                </button>
+            </div>
+
+            <!-- View Toggle & Calendar -->
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap;">
+                <div class="tabs" style="margin-bottom: 0; border-bottom: none;">
+                    <div class="tab active" data-view="list">📋 List View</div>
+                    <div class="tab" data-view="calendar">📅 Calendar View</div>
+                </div>
+                
+                <div style="display: flex; gap: 0.5rem; margin-left: auto;">
+                    <select class="form-control" id="view-period" style="width: auto;">
+                        <option value="day">Today</option>
+                        <option value="week" selected>This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="all">All</option>
+                    </select>
+                    <input type="date" class="form-control" id="selected-date" style="width: auto;">
+                </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 1.5rem;">
+                <div class="stat-card">
+                    <div class="stat-icon green">✅</div>
+                    <div class="stat-content">
+                        <h4>Completed Today</h4>
+                        <div class="stat-value" id="completed-today">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon blue">📋</div>
+                    <div class="stat-content">
+                        <h4>Pending Today</h4>
+                        <div class="stat-value" id="pending-today">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red">⚠️</div>
+                    <div class="stat-content">
+                        <h4>Overdue</h4>
+                        <div class="stat-value" id="overdue-count">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Todo List View -->
+            <div id="list-view">
+                <!-- Overdue Section -->
+                <div class="card" id="overdue-section" style="margin-bottom: 1.5rem; display: none;">
+                    <div class="card-header" style="background: rgba(248, 81, 73, 0.1);">
+                        <h3>⚠️ Overdue Tasks</h3>
+                    </div>
+                    <div class="card-body">
+                        <ul class="todo-list" id="overdue-list"></ul>
+                    </div>
+                </div>
+
+                <!-- Main Todo List -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 id="todo-list-title">Today's Tasks</h3>
+                        <span class="text-muted" id="todo-date-range"></span>
+                    </div>
+                    <div class="card-body">
+                        <ul class="todo-list" id="todo-list">
+                            <li class="empty-state">
+                                <p>No tasks found</p>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar View -->
+            <div id="calendar-view" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <button class="btn btn-ghost btn-sm" onclick="changeMonth(-1)">←</button>
+                        <h3 id="calendar-month-year"></h3>
+                        <button class="btn btn-ghost btn-sm" onclick="changeMonth(1)">→</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="calendar" id="calendar-grid"></div>
+                    </div>
+                </div>
+
+                <!-- Selected Day Todos -->
+                <div class="card" style="margin-top: 1.5rem;">
+                    <div class="card-header">
+                        <h3 id="selected-day-title">Select a day</h3>
+                    </div>
+                    <div class="card-body">
+                        <ul class="todo-list" id="selected-day-todos">
+                            <li class="empty-state"><p>Click on a day to see tasks</p></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Chart -->
+            <div class="card" style="margin-top: 1.5rem;">
+                <div class="card-header">
+                    <h3>📊 Completion Rate</h3>
+                    <div class="chart-filters">
+                        <button class="chart-filter" data-period="day">Daily</button>
+                        <button class="chart-filter active" data-period="week">Weekly</button>
+                        <button class="chart-filter" data-period="month">Monthly</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="completion-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips Section -->
+            <div class="tips-section" style="margin-top: 1.5rem;">
+                <div class="tips-header">
+                    <span>💡</span>
+                    <h3>Productivity Tips</h3>
+                    <button class="btn btn-ghost btn-sm" onclick="loadTodoTips()" style="margin-left: auto;">Refresh</button>
+                </div>
+                <div class="tips-content" id="todo-tips-content">
+                    Loading tips...
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- New/Edit Todo Modal -->
+    <div class="modal-overlay" id="todo-modal">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 id="todo-modal-title">New Todo</h2>
+                <button class="modal-close" id="btn-close-todo">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="todo-form">
+                    <input type="hidden" id="todo-id">
+
+                    <div class="form-group">
+                        <label for="todo-title">Task *</label>
+                        <input type="text" id="todo-title" class="form-control" 
+                               placeholder="What needs to be done?" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="todo-description">Description</label>
+                        <textarea id="todo-description" class="form-control" rows="2"
+                                  placeholder="Add more details..."></textarea>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label for="todo-date">Scheduled Date *</label>
+                            <input type="date" id="todo-date" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="todo-priority">Priority</label>
+                            <select id="todo-priority" class="form-control">
+                                <option value="low">🟢 Low</option>
+                                <option value="medium" selected>🔵 Medium</option>
+                                <option value="high">🟡 High</option>
+                                <option value="urgent">🔴 Urgent</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btn-cancel-todo">Cancel</button>
+                <button class="btn btn-primary" id="btn-save-todo">Save Todo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        let todos = [];
+        let overdueTodos = [];
+        let currentView = 'list';
+        let currentPeriod = 'week';
+        let calendarDate = new Date();
+        let completionChart;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            
+            // Set default date
+            document.getElementById('todo-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('selected-date').value = new Date().toISOString().split('T')[0];
+            
+            setupViewToggle();
+            setupPeriodSelect();
+            setupChartFilters();
+            
+            // Attach button event listeners
+            document.getElementById('btn-add-todo').addEventListener('click', function() {
+                openTodoModal();
+            });
+            document.getElementById('reschedule-btn').addEventListener('click', function() {
+                rescheduleOverdue();
+            });
+            
+            // Todo modal buttons
+            document.getElementById('btn-close-todo').addEventListener('click', closeTodoModal);
+            document.getElementById('btn-cancel-todo').addEventListener('click', closeTodoModal);
+            document.getElementById('btn-save-todo').addEventListener('click', saveTodo);
+            
+            loadTodos();
+            loadOverdue();
+            loadStats();
+            loadCompletionChart('week');
+            loadTodoTips();
+        });
+
+        // Setup view toggle
+        function setupViewToggle() {
+            document.querySelectorAll('[data-view]').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('[data-view]').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentView = tab.dataset.view;
+                    
+                    document.getElementById('list-view').style.display = currentView === 'list' ? 'block' : 'none';
+                    document.getElementById('calendar-view').style.display = currentView === 'calendar' ? 'block' : 'none';
+                    
+                    if (currentView === 'calendar') {
+                        renderCalendar();
+                    }
+                });
+            });
+        }
+
+        // Setup period select
+        function setupPeriodSelect() {
+            document.getElementById('view-period').addEventListener('change', function() {
+                currentPeriod = this.value;
+                loadTodos();
+            });
+
+            document.getElementById('selected-date').addEventListener('change', function() {
+                loadTodos();
+            });
+        }
+
+        // Setup chart filters
+        function setupChartFilters() {
+            document.querySelectorAll('.chart-filter').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.chart-filter').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    loadCompletionChart(btn.dataset.period);
+                });
+            });
+        }
+
+        // Load todos
+        async function loadTodos() {
+            try {
+                const selectedDate = document.getElementById('selected-date').value;
+                let params = {};
+                let title = "Today's Tasks";
+                let dateRange = '';
+
+                const today = new Date().toISOString().split('T')[0];
+
+                switch (currentPeriod) {
+                    case 'day':
+                        params = { date: selectedDate || today };
+                        title = `Tasks for ${formatDate(selectedDate || today)}`;
+                        break;
+                    case 'week':
+                        const weekStart = getWeekStart(selectedDate ? new Date(selectedDate) : new Date());
+                        const weekEnd = new Date(weekStart);
+                        weekEnd.setDate(weekEnd.getDate() + 6);
+                        params = { 
+                            startDate: weekStart.toISOString().split('T')[0],
+                            endDate: weekEnd.toISOString().split('T')[0]
+                        };
+                        title = 'This Week';
+                        dateRange = `${formatDate(params.startDate)} - ${formatDate(params.endDate)}`;
+                        break;
+                    case 'month':
+                        const monthStart = new Date(selectedDate ? new Date(selectedDate) : new Date());
+                        monthStart.setDate(1);
+                        const monthEnd = new Date(monthStart);
+                        monthEnd.setMonth(monthEnd.getMonth() + 1);
+                        monthEnd.setDate(0);
+                        params = {
+                            startDate: monthStart.toISOString().split('T')[0],
+                            endDate: monthEnd.toISOString().split('T')[0]
+                        };
+                        title = monthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                        break;
+                    case 'all':
+                        title = 'All Tasks';
+                        break;
+                }
+
+                const queryString = new URLSearchParams(params).toString();
+                const response = await fetch(`/api/todos?${queryString}`);
+                todos = await response.json();
+
+                document.getElementById('todo-list-title').textContent = title;
+                document.getElementById('todo-date-range').textContent = dateRange;
+
+                renderTodos();
+                updateStats();
+            } catch (error) {
+                showToast('Failed to load todos', 'error');
+            }
+        }
+
+        // Load overdue
+        async function loadOverdue() {
+            try {
+                const response = await fetch('/api/todos/overdue');
+                overdueTodos = await response.json();
+
+                const section = document.getElementById('overdue-section');
+                const rescheduleBtn = document.getElementById('reschedule-btn');
+
+                if (overdueTodos.length > 0) {
+                    section.style.display = 'block';
+                    rescheduleBtn.style.display = 'inline-flex';
+                    document.getElementById('overdue-list').innerHTML = overdueTodos.map(todo => renderTodoItem(todo)).join('');
+                } else {
+                    section.style.display = 'none';
+                    rescheduleBtn.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Failed to load overdue:', error);
+            }
+        }
+
+        // Render todos
+        function renderTodos() {
+            const container = document.getElementById('todo-list');
+
+            if (todos.length === 0) {
+                container.innerHTML = '<li class="empty-state"><p>No tasks found for this period</p></li>';
+                return;
+            }
+
+            // Group by date
+            const grouped = {};
+            todos.forEach(todo => {
+                if (!grouped[todo.scheduled_date]) {
+                    grouped[todo.scheduled_date] = [];
+                }
+                grouped[todo.scheduled_date].push(todo);
+            });
+
+            let html = '';
+            Object.keys(grouped).sort().forEach(date => {
+                const isToday = date === new Date().toISOString().split('T')[0];
+                html += `
+                    <li style="padding: 0.75rem 1rem; background: var(--bg-tertiary); font-weight: 600; font-size: 0.9rem;">
+                        ${formatDate(date)} ${isToday ? '(Today)' : ''}
+                    </li>
+                `;
+                grouped[date].forEach(todo => {
+                    html += renderTodoItem(todo);
+                });
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Render todo item
+        function renderTodoItem(todo) {
+            return `
+                <li class="todo-item ${todo.is_completed ? 'completed' : ''}">
+                    <div class="todo-checkbox ${todo.is_completed ? 'checked' : ''}" 
+                         onclick="toggleTodo(${todo.id})"></div>
+                    <div class="todo-content">
+                        <div class="todo-title">${escapeHtml(todo.title)}</div>
+                        <div class="todo-meta">
+                            <span class="priority-badge priority-${todo.priority}">${todo.priority}</span>
+                            ${todo.description ? `<span style="color: var(--text-muted);">${escapeHtml(todo.description.substring(0, 50))}${todo.description.length > 50 ? '...' : ''}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="todo-actions">
+                        <button class="btn btn-ghost btn-sm" onclick="editTodo(${todo.id})">✏️</button>
+                        <button class="btn btn-ghost btn-sm" onclick="deleteTodo(${todo.id})">🗑️</button>
+                    </div>
+                </li>
+            `;
+        }
+
+        // Toggle todo
+        async function toggleTodo(id) {
+            try {
+                await fetch(`/api/todos/${id}/toggle`, { method: 'PATCH' });
+                loadTodos();
+                loadOverdue();
+                loadStats();
+                
+                if (currentView === 'calendar') {
+                    renderCalendar();
+                }
+            } catch (error) {
+                showToast('Failed to update todo', 'error');
+            }
+        }
+
+        // Load stats
+        async function loadStats() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const todayResponse = await fetch(`/api/todos?date=${today}`);
+                const todayTodos = await todayResponse.json();
+
+                const completed = todayTodos.filter(t => t.is_completed).length;
+                const pending = todayTodos.filter(t => !t.is_completed).length;
+
+                document.getElementById('completed-today').textContent = completed;
+                document.getElementById('pending-today').textContent = pending;
+                document.getElementById('overdue-count').textContent = overdueTodos.length;
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        // Update stats (quick update without API call)
+        function updateStats() {
+            const today = new Date().toISOString().split('T')[0];
+            const todayTodos = todos.filter(t => t.scheduled_date === today);
+            
+            document.getElementById('completed-today').textContent = todayTodos.filter(t => t.is_completed).length;
+            document.getElementById('pending-today').textContent = todayTodos.filter(t => !t.is_completed).length;
+        }
+
+        // Open todo modal
+        function openTodoModal(date = null) {
+            document.getElementById('todo-modal-title').textContent = 'New Todo';
+            document.getElementById('todo-id').value = '';
+            document.getElementById('todo-title').value = '';
+            document.getElementById('todo-description').value = '';
+            document.getElementById('todo-date').value = date || document.getElementById('selected-date').value || new Date().toISOString().split('T')[0];
+            document.getElementById('todo-priority').value = 'medium';
+            
+            document.getElementById('todo-modal').classList.add('active');
+        }
+
+        // Edit todo
+        async function editTodo(id) {
+            const todo = todos.find(t => t.id === id) || overdueTodos.find(t => t.id === id);
+            
+            if (!todo) return;
+
+            document.getElementById('todo-modal-title').textContent = 'Edit Todo';
+            document.getElementById('todo-id').value = todo.id;
+            document.getElementById('todo-title').value = todo.title;
+            document.getElementById('todo-description').value = todo.description || '';
+            document.getElementById('todo-date').value = todo.scheduled_date;
+            document.getElementById('todo-priority').value = todo.priority;
+
+            document.getElementById('todo-modal').classList.add('active');
+        }
+
+        // Save todo
+        async function saveTodo() {
+            const id = document.getElementById('todo-id').value;
+            const title = document.getElementById('todo-title').value.trim();
+
+            if (!title) {
+                showToast('Please enter a task title', 'warning');
+                return;
+            }
+
+            const data = {
+                title,
+                description: document.getElementById('todo-description').value,
+                scheduled_date: document.getElementById('todo-date').value,
+                priority: document.getElementById('todo-priority').value
+            };
+
+            try {
+                const url = id ? `/api/todos/${id}` : '/api/todos';
+                const method = id ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showToast(id ? 'Todo updated!' : 'Todo created!', 'success');
+                    closeTodoModal();
+                    loadTodos();
+                    loadOverdue();
+                    
+                    if (currentView === 'calendar') {
+                        renderCalendar();
+                    }
+                } else {
+                    const result = await response.json();
+                    showToast(result.error || 'Failed to save todo', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to save todo', 'error');
+            }
+        }
+
+        // Delete todo
+        async function deleteTodo(id) {
+            if (!confirm('Are you sure you want to delete this task?')) return;
+
+            try {
+                const response = await fetch(`/api/todos/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    showToast('Todo deleted', 'success');
+                    loadTodos();
+                    loadOverdue();
+                    
+                    if (currentView === 'calendar') {
+                        renderCalendar();
+                    }
+                } else {
+                    showToast('Failed to delete todo', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to delete todo', 'error');
+            }
+        }
+
+        // Reschedule overdue
+        async function rescheduleOverdue() {
+            const newDate = prompt('Reschedule all overdue tasks to:', new Date().toISOString().split('T')[0]);
+            
+            if (!newDate) return;
+
+            try {
+                const response = await fetch('/api/todos/reschedule-overdue', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ newDate })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showToast(`${result.count} tasks rescheduled`, 'success');
+                    loadTodos();
+                    loadOverdue();
+                } else {
+                    showToast('Failed to reschedule', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to reschedule', 'error');
+            }
+        }
+
+        // Close modal
+        function closeTodoModal() {
+            document.getElementById('todo-modal').classList.remove('active');
+        }
+
+        // Calendar functions
+        function renderCalendar() {
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            
+            document.getElementById('calendar-month-year').textContent = 
+                calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDate = firstDay.toISOString().split('T')[0];
+            const endDate = lastDay.toISOString().split('T')[0];
+
+            // Fetch todos for the month
+            fetch(`/api/todos?startDate=${startDate}&endDate=${endDate}`)
+                .then(r => r.json())
+                .then(monthTodos => {
+                    const todosByDate = {};
+                    monthTodos.forEach(t => {
+                        if (!todosByDate[t.scheduled_date]) {
+                            todosByDate[t.scheduled_date] = { total: 0, completed: 0 };
+                        }
+                        todosByDate[t.scheduled_date].total++;
+                        if (t.is_completed) todosByDate[t.scheduled_date].completed++;
+                    });
+
+                    renderCalendarGrid(year, month, todosByDate);
+                });
+        }
+
+        function renderCalendarGrid(year, month, todosByDate) {
+            const grid = document.getElementById('calendar-grid');
+            const today = new Date().toISOString().split('T')[0];
+            
+            // Header
+            let html = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                .map(d => `<div class="calendar-header">${d}</div>`).join('');
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+
+            // Empty cells before first day
+            for (let i = 0; i < firstDay.getDay(); i++) {
+                html += '<div class="calendar-day" style="opacity: 0.3;"></div>';
+            }
+
+            // Days of month
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const data = todosByDate[dateStr];
+                const isToday = dateStr === today;
+                
+                let classes = 'calendar-day';
+                let dot = '';
+                
+                if (isToday) classes += ' today';
+                
+                if (data) {
+                    if (data.completed === data.total) {
+                        classes += ' all-complete';
+                        dot = '<div class="dot complete"></div>';
+                    } else {
+                        classes += ' has-todos';
+                        dot = '<div class="dot pending"></div>';
+                    }
+                }
+
+                html += `
+                    <div class="${classes}" onclick="selectCalendarDay('${dateStr}')" title="${data ? `${data.completed}/${data.total} completed` : 'No tasks'}">
+                        ${day}
+                        ${dot}
+                    </div>
+                `;
+            }
+
+            grid.innerHTML = html;
+        }
+
+        function changeMonth(delta) {
+            calendarDate.setMonth(calendarDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        async function selectCalendarDay(dateStr) {
+            try {
+                const response = await fetch(`/api/todos?date=${dateStr}`);
+                const dayTodos = await response.json();
+
+                document.getElementById('selected-day-title').textContent = `Tasks for ${formatDate(dateStr)}`;
+                
+                const container = document.getElementById('selected-day-todos');
+                if (dayTodos.length === 0) {
+                    container.innerHTML = `
+                        <li class="empty-state">
+                            <p>No tasks for this day</p>
+                            <button class="btn btn-primary btn-sm" onclick="openTodoModal('${dateStr}')" style="margin-top: 1rem;">
+                                ➕ Add Task
+                            </button>
+                        </li>
+                    `;
+                } else {
+                    container.innerHTML = dayTodos.map(t => renderTodoItem(t)).join('');
+                }
+            } catch (error) {
+                showToast('Failed to load day tasks', 'error');
+            }
+        }
+
+        // Load completion chart
+        async function loadCompletionChart(period) {
+            try {
+                const response = await fetch(`/api/stats/todos?period=${period}`);
+                const stats = await response.json();
+
+                const ctx = document.getElementById('completion-chart').getContext('2d');
+
+                if (completionChart) completionChart.destroy();
+
+                const completionRates = stats.map(s => 
+                    s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0
+                );
+
+                completionChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: stats.map(s => s.period),
+                        datasets: [{
+                            label: 'Completion Rate %',
+                            data: completionRates,
+                            borderColor: 'rgba(63, 185, 80, 1)',
+                            backgroundColor: 'rgba(63, 185, 80, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: '#30363d' },
+                                ticks: { color: '#8b949e' }
+                            },
+                            y: {
+                                min: 0,
+                                max: 100,
+                                grid: { color: '#30363d' },
+                                ticks: { 
+                                    color: '#8b949e',
+                                    callback: v => v + '%'
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load chart:', error);
+            }
+        }
+
+        // Load tips
+        async function loadTodoTips() {
+            try {
+                const pendingTodos = todos.filter(t => !t.is_completed);
+                
+                const response = await fetch('/api/ai/tips', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        context: 'todos', 
+                        items: pendingTodos.length > 0 ? pendingTodos : [{ title: 'Plan your day', priority: 'medium' }]
+                    })
+                });
+
+                const data = await response.json();
+                document.getElementById('todo-tips-content').textContent = data.tips;
+            } catch (error) {
+                document.getElementById('todo-tips-content').textContent = 
+                    "Start with your most important task. Break big tasks into smaller steps. Take regular breaks to stay focused! 💪";
+            }
+        }
+
+        // Helpers
+        function getWeekStart(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            d.setDate(d.getDate() - day);
+            return d;
+        }
+
+        function formatDate(dateStr) {
+            return new Date(dateStr).toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Personal Growth Diary</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <span class="icon">📓</span>
+                <h2>Growth Diary</h2>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="/dashboard" class="nav-item active">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/journal" class="nav-item">
+                    <span class="icon">✍️</span>
+                    <span>Journal</span>
+                </a>
+                <a href="/goals" class="nav-item">
+                    <span class="icon">🎯</span>
+                    <span>Goals</span>
+                </a>
+                <a href="/todos" class="nav-item">
+                    <span class="icon">✅</span>
+                    <span>Todos</span>
+                </a>
+                <a href="/settings" class="nav-item">
+                    <span class="icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">U</div>
+                    <span class="user-name" id="user-name">User</span>
+                    <button class="btn btn-ghost btn-sm" onclick="logout()" title="Logout">🚪</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1>Welcome back! 👋</h1>
+                <p id="greeting-text">Here's your progress today</p>
+            </div>
+
+            <!-- Motivation Quote -->
+            <div class="motivation-box">
+                <p class="motivation-quote" id="quote-text">"Loading inspiration..."</p>
+                <p class="motivation-author" id="quote-author">- Loading</p>
+                <button class="btn btn-ghost btn-sm motivation-refresh" onclick="loadQuote()">
+                    🔄 New Quote
+                </button>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">✅</div>
+                    <div class="stat-content">
+                        <h4>Today's Tasks</h4>
+                        <div class="stat-value"><span id="today-completed">0</span>/<span id="today-total">0</span></div>
+                        <div class="stat-meta">completed</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon red">⚠️</div>
+                    <div class="stat-content">
+                        <h4>Overdue</h4>
+                        <div class="stat-value" id="overdue-count">0</div>
+                        <div class="stat-meta">tasks need attention</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon yellow">🔥</div>
+                    <div class="stat-content">
+                        <h4>Current Streak</h4>
+                        <div class="stat-value" id="streak-count">0</div>
+                        <div class="stat-meta">days</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon purple">🎯</div>
+                    <div class="stat-content">
+                        <h4>Active Goals</h4>
+                        <div class="stat-value" id="goals-count">0</div>
+                        <div class="stat-meta">in progress</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <a href="/journal" class="btn btn-primary">
+                    ✍️ Write Journal Entry
+                </a>
+                <a href="/todos" class="btn btn-secondary">
+                    ➕ Add Todo
+                </a>
+                <a href="/goals" class="btn btn-secondary">
+                    🎯 Set New Goal
+                </a>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <!-- Today's Todos -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📋 Today's Tasks</h3>
+                        <a href="/todos" class="btn btn-ghost btn-sm">View All</a>
+                    </div>
+                    <div class="card-body" id="today-todos-container">
+                        <div class="empty-state">
+                            <p>No tasks for today</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Goals Progress -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🎯 Goals Progress</h3>
+                        <a href="/goals" class="btn btn-ghost btn-sm">View All</a>
+                    </div>
+                    <div class="card-body" id="goals-progress-container">
+                        <div class="empty-state">
+                            <p>No active goals</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Heatmap -->
+            <div class="card" style="margin-top: 1.5rem;">
+                <div class="card-header">
+                    <h3>📅 Activity Heatmap</h3>
+                    <span class="text-muted" id="heatmap-year"></span>
+                </div>
+                <div class="card-body">
+                    <div class="heatmap-container" id="heatmap-container">
+                        <!-- Heatmap will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📈 Todo Completion</h3>
+                        <div class="chart-filters">
+                            <button class="chart-filter active" data-period="day">Daily</button>
+                            <button class="chart-filter" data-period="week">Weekly</button>
+                            <button class="chart-filter" data-period="month">Monthly</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="todo-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>😊 Mood Trends</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="mood-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Tips -->
+            <div class="tips-section" id="tips-section">
+                <div class="tips-header">
+                    <span>💡</span>
+                    <h3>Personalized Tips</h3>
+                    <button class="btn btn-ghost btn-sm" onclick="loadTips()" style="margin-left: auto;">Refresh</button>
+                </div>
+                <div class="tips-content" id="tips-content">
+                    Loading tips...
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        let todoChart, moodChart;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth();
+            setGreeting();
+            loadQuote();
+            loadDashboardStats();
+            loadTodayTodos();
+            loadGoalsProgress();
+            loadHeatmap();
+            loadTodoChart('day');
+            loadMoodChart();
+            loadTips();
+        });
+
+        // Set greeting based on time
+        function setGreeting() {
+            const hour = new Date().getHours();
+            let greeting;
+            if (hour < 12) greeting = "Good morning! ☀️";
+            else if (hour < 18) greeting = "Good afternoon! 🌤️";
+            else greeting = "Good evening! 🌙";
+            
+            document.getElementById('greeting-text').textContent = `${greeting} Here's your progress overview.`;
+        }
+
+        // Load motivational quote
+        async function loadQuote() {
+            try {
+                const response = await fetch('/api/ai/quote');
+                const quote = await response.json();
+                document.getElementById('quote-text').textContent = `"${quote.text}"`;
+                document.getElementById('quote-author').textContent = `— ${quote.author}`;
+            } catch (error) {
+                console.error('Failed to load quote:', error);
+            }
+        }
+
+        // Load dashboard stats
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch('/api/stats/dashboard');
+                const stats = await response.json();
+
+                document.getElementById('today-completed').textContent = stats.todayTodos.completed || 0;
+                document.getElementById('today-total').textContent = stats.todayTodos.total || 0;
+                document.getElementById('overdue-count').textContent = stats.overdueTodos;
+                document.getElementById('streak-count').textContent = stats.streak;
+                
+                const totalGoals = stats.activeGoals.reduce((sum, g) => sum + g.count, 0);
+                document.getElementById('goals-count').textContent = totalGoals;
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        // Load today's todos
+        async function loadTodayTodos() {
+            try {
+                const response = await fetch('/api/todos/today');
+                const todos = await response.json();
+                const container = document.getElementById('today-todos-container');
+
+                if (todos.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No tasks for today! 🎉</p></div>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <ul class="todo-list">
+                        ${todos.slice(0, 5).map(todo => `
+                            <li class="todo-item ${todo.is_completed ? 'completed' : ''}">
+                                <div class="todo-checkbox ${todo.is_completed ? 'checked' : ''}" 
+                                     onclick="toggleTodo(${todo.id})"></div>
+                                <div class="todo-content">
+                                    <div class="todo-title">${escapeHtml(todo.title)}</div>
+                                    <div class="todo-meta">
+                                        <span class="priority-badge priority-${todo.priority}">${todo.priority}</span>
+                                    </div>
+                                </div>
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+            } catch (error) {
+                console.error('Failed to load todos:', error);
+            }
+        }
+
+        // Toggle todo completion
+        async function toggleTodo(id) {
+            try {
+                await fetch(`/api/todos/${id}/toggle`, { method: 'PATCH' });
+                loadTodayTodos();
+                loadDashboardStats();
+                loadHeatmap();
+            } catch (error) {
+                showToast('Failed to update todo', 'error');
+            }
+        }
+
+        // Load goals progress
+        async function loadGoalsProgress() {
+            try {
+                const response = await fetch('/api/goals?status=active');
+                const goals = await response.json();
+                const container = document.getElementById('goals-progress-container');
+
+                if (goals.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No active goals. Set one to get started! 🎯</p></div>';
+                    return;
+                }
+
+                container.innerHTML = goals.slice(0, 4).map(goal => `
+                    <div style="margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="font-weight: 500;">${escapeHtml(goal.title)}</span>
+                            <span style="color: var(--text-secondary);">${goal.progress}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${goal.progress}%"></div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load goals:', error);
+            }
+        }
+
+        // Load heatmap
+        async function loadHeatmap() {
+            try {
+                const year = new Date().getFullYear();
+                document.getElementById('heatmap-year').textContent = year;
+                
+                const response = await fetch(`/api/stats/heatmap?year=${year}`);
+                const data = await response.json();
+                
+                const container = document.getElementById('heatmap-container');
+                container.innerHTML = generateHeatmap(data, year);
+            } catch (error) {
+                console.error('Failed to load heatmap:', error);
+            }
+        }
+
+        // Generate heatmap HTML
+        function generateHeatmap(data, year) {
+            const startDate = new Date(year, 0, 1);
+            const endDate = new Date(year, 11, 31);
+            const weeks = [];
+            let currentWeek = [];
+
+            // Adjust start to Sunday
+            const dayOfWeek = startDate.getDay();
+            for (let i = 0; i < dayOfWeek; i++) {
+                currentWeek.push('<div class="heatmap-day" style="visibility: hidden;"></div>');
+            }
+
+            for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                const dateStr = d.toISOString().split('T')[0];
+                const count = data[dateStr] || 0;
+                let level = 0;
+                if (count > 0) level = Math.min(Math.ceil(count / 2), 4);
+
+                currentWeek.push(`
+                    <div class="heatmap-day level-${level}" 
+                         title="${dateStr}: ${count} activities"></div>
+                `);
+
+                if (d.getDay() === 6) {
+                    weeks.push(`<div class="heatmap-week">${currentWeek.join('')}</div>`);
+                    currentWeek = [];
+                }
+            }
+
+            if (currentWeek.length > 0) {
+                weeks.push(`<div class="heatmap-week">${currentWeek.join('')}</div>`);
+            }
+
+            return `<div class="heatmap">${weeks.join('')}</div>`;
+        }
+
+        // Load todo chart
+        async function loadTodoChart(period) {
+            try {
+                const response = await fetch(`/api/stats/todos?period=${period}`);
+                const stats = await response.json();
+
+                const ctx = document.getElementById('todo-chart').getContext('2d');
+
+                if (todoChart) todoChart.destroy();
+
+                todoChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: stats.map(s => s.period),
+                        datasets: [
+                            {
+                                label: 'Completed',
+                                data: stats.map(s => s.completed),
+                                backgroundColor: 'rgba(63, 185, 80, 0.8)',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'Total',
+                                data: stats.map(s => s.total),
+                                backgroundColor: 'rgba(88, 166, 255, 0.3)',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: { color: '#8b949e' }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: '#30363d' },
+                                ticks: { color: '#8b949e' }
+                            },
+                            y: {
+                                grid: { color: '#30363d' },
+                                ticks: { color: '#8b949e' }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load todo chart:', error);
+            }
+        }
+
+        // Chart filter clicks
+        document.querySelectorAll('.chart-filter').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.chart-filter').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                loadTodoChart(btn.dataset.period);
+            });
+        });
+
+        // Load mood chart
+        async function loadMoodChart() {
+            try {
+                const response = await fetch('/api/stats/mood?days=30');
+                const data = await response.json();
+
+                const ctx = document.getElementById('mood-chart').getContext('2d');
+
+                if (moodChart) moodChart.destroy();
+
+                const moodValues = {
+                    'amazing': 5,
+                    'good': 4,
+                    'neutral': 3,
+                    'bad': 2,
+                    'terrible': 1
+                };
+
+                const chartData = data.trend.map(d => ({
+                    x: d.entry_date,
+                    y: moodValues[d.mood]
+                }));
+
+                moodChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'Mood',
+                            data: chartData,
+                            borderColor: 'rgba(163, 113, 247, 1)',
+                            backgroundColor: 'rgba(163, 113, 247, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                type: 'category',
+                                grid: { color: '#30363d' },
+                                ticks: { color: '#8b949e' }
+                            },
+                            y: {
+                                min: 1,
+                                max: 5,
+                                grid: { color: '#30363d' },
+                                ticks: {
+                                    color: '#8b949e',
+                                    callback: function(value) {
+                                        const labels = ['', '😢', '😔', '😐', '😊', '🤩'];
+                                        return labels[value];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load mood chart:', error);
+            }
+        }
+
+        // Load AI tips
+        async function loadTips() {
+            try {
+                const todosResponse = await fetch('/api/todos/today');
+                const todos = await todosResponse.json();
+                const pendingTodos = todos.filter(t => !t.is_completed);
+
+                const goalsResponse = await fetch('/api/goals?status=active');
+                const goals = await goalsResponse.json();
+
+                let context, items;
+                if (pendingTodos.length > 0) {
+                    context = 'todos';
+                    items = pendingTodos;
+                } else if (goals.length > 0) {
+                    context = 'goals';
+                    items = goals;
+                } else {
+                    context = 'motivation';
+                    items = { pendingCount: 0, goalCount: goals.length };
+                }
+
+                const response = await fetch('/api/ai/tips', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ context, items })
+                });
+
+                const data = await response.json();
+                document.getElementById('tips-content').textContent = data.tips;
+            } catch (error) {
+                document.getElementById('tips-content').textContent = 
+                    "Keep pushing forward! Every small step counts towards your bigger goals. 💪";
+            }
+        }
+    </script>
+</body>
+</html>
