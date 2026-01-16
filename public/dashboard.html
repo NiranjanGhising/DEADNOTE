@@ -61,7 +61,7 @@
             <div class="motivation-box">
                 <p class="motivation-quote" id="quote-text">"Loading inspiration..."</p>
                 <p class="motivation-author" id="quote-author">- Loading</p>
-                <button class="btn btn-ghost btn-sm motivation-refresh" onclick="loadQuote()">
+                <button class="btn btn-ghost btn-sm motivation-refresh" id="btn-refresh-quote">
                     🔄 New Quote
                 </button>
             </div>
@@ -194,7 +194,7 @@
                 <div class="tips-header">
                     <span>💡</span>
                     <h3>Personalized Tips</h3>
-                    <button class="btn btn-ghost btn-sm" onclick="loadTips()" style="margin-left: auto;">Refresh</button>
+                    <button class="btn btn-ghost btn-sm" id="btn-refresh-tips" style="margin-left: auto;">Refresh</button>
                 </div>
                 <div class="tips-content" id="tips-content">
                     Loading tips...
@@ -222,7 +222,25 @@
             loadTodoChart('day');
             loadMoodChart();
             loadTips();
+            
+            // Attach event listeners
+            document.getElementById('btn-refresh-quote').addEventListener('click', loadQuote);
+            document.getElementById('btn-refresh-tips').addEventListener('click', loadTips);
+            
+            // Todo toggle using event delegation
+            document.getElementById('today-todos-container').addEventListener('click', handleTodoClick);
         });
+
+        function handleTodoClick(e) {
+            const checkbox = e.target.closest('[data-action="toggle"]');
+            if (checkbox) {
+                const todoItem = checkbox.closest('[data-todo-id]');
+                if (todoItem) {
+                    const todoId = parseInt(todoItem.dataset.todoId);
+                    toggleTodo(todoId);
+                }
+            }
+        }
 
         // Set greeting based on time
         function setGreeting() {
@@ -278,11 +296,11 @@
                 }
 
                 container.innerHTML = `
-                    <ul class="todo-list">
+                    <ul class="todo-list" id="dashboard-todo-list">
                         ${todos.slice(0, 5).map(todo => `
-                            <li class="todo-item ${todo.is_completed ? 'completed' : ''}">
+                            <li class="todo-item ${todo.is_completed ? 'completed' : ''}" data-todo-id="${todo.id}">
                                 <div class="todo-checkbox ${todo.is_completed ? 'checked' : ''}" 
-                                     onclick="toggleTodo(${todo.id})"></div>
+                                     data-action="toggle"></div>
                                 <div class="todo-content">
                                     <div class="todo-title">${escapeHtml(todo.title)}</div>
                                     <div class="todo-meta">

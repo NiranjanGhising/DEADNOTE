@@ -159,7 +159,7 @@
     </div>
 
     <!-- Image Preview Modal -->
-    <div class="image-preview-overlay" id="image-preview-modal" onclick="closeImagePreview()" style="display: none;">
+    <div class="image-preview-overlay" id="image-preview-modal" style="display: none;">
         <img id="preview-image" src="">
     </div>
 
@@ -177,6 +177,7 @@
             loadEntries();
             setupMoodSelector();
             setupImagePreview();
+            setupEntryActions();
             
             // Attach button event listeners
             document.getElementById('btn-new-entry').addEventListener('click', function() {
@@ -191,6 +192,9 @@
             document.getElementById('btn-save-entry').addEventListener('click', saveEntry);
             document.querySelector('#entry-modal .modal-close').addEventListener('click', closeModal);
             
+            // Image preview modal
+            document.getElementById('image-preview-modal').addEventListener('click', closeImagePreview);
+            
             // Editor toolbar buttons
             document.querySelectorAll('.editor-btn[data-format]').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -198,6 +202,38 @@
                 });
             });
         });
+
+        // Setup entry actions using event delegation
+        function setupEntryActions() {
+            document.getElementById('journal-entries').addEventListener('click', handleEntryAction);
+        }
+
+        function handleEntryAction(e) {
+            // Handle action buttons
+            const actionBtn = e.target.closest('[data-action]');
+            if (actionBtn) {
+                const action = actionBtn.dataset.action;
+                const entryId = parseInt(actionBtn.dataset.entryId);
+
+                if (action === 'toggle-content') {
+                    toggleEntryContent(entryId);
+                    return;
+                }
+
+                if (action === 'edit') {
+                    editEntry(entryId);
+                } else if (action === 'delete') {
+                    deleteEntry(entryId);
+                }
+                return;
+            }
+            
+            // Handle image preview
+            const previewImg = e.target.closest('[data-preview-image]');
+            if (previewImg) {
+                showImagePreview(previewImg.dataset.previewImage);
+            }
+        }
 
         // Load journal entries
         async function loadEntries(params = {}) {
@@ -235,7 +271,7 @@
             };
 
             container.innerHTML = entries.map(entry => `
-                <div class="journal-entry">
+                <div class="journal-entry" data-entry-id="${entry.id}" data-expanded="false">
                     <div class="journal-header">
                         <div>
                             <span class="journal-date">${formatDate(entry.entry_date)}</span>
@@ -249,19 +285,22 @@
                                 </div>
                             ` : ''}
                             <div class="todo-actions" style="opacity: 1;">
-                                <button class="btn btn-ghost btn-sm" onclick="editEntry(${entry.id})">✏️</button>
-                                <button class="btn btn-ghost btn-sm" onclick="deleteEntry(${entry.id})">🗑️</button>
+                                <button class="btn btn-ghost btn-sm" data-action="edit" data-entry-id="${entry.id}">✏️</button>
+                                <button class="btn btn-ghost btn-sm" data-action="delete" data-entry-id="${entry.id}">🗑️</button>
                             </div>
                         </div>
                     </div>
                     <div class="journal-content">
-                        <div class="journal-text">${entry.content}</div>
+                        <div class="journal-text" data-content="true">${escapeHtml(getContentPreview(entry.content, 220))}</div>
+                        ${hasMoreContent(entry.content, 220) ? `
+                            <button class="btn btn-ghost btn-sm" data-action="toggle-content" data-entry-id="${entry.id}" style="margin-top: 0.5rem;">Read more</button>
+                        ` : ''}
                         ${entry.mood_note ? `<p style="color: var(--text-muted); margin-top: 1rem; font-style: italic;">"${escapeHtml(entry.mood_note)}"</p>` : ''}
                         ${entry.images && entry.images.length > 0 ? `
                             <div class="journal-images">
                                 ${entry.images.map(img => `
                                     <img src="/uploads/journal/${img}" class="journal-image" 
-                                         onclick="showImagePreview('/uploads/journal/${img}')">
+                                         data-preview-image="/uploads/journal/${img}">
                                 `).join('')}
                             </div>
                         ` : ''}
@@ -449,6 +488,45 @@
         // Close image preview
         function closeImagePreview() {
             document.getElementById('image-preview-modal').style.display = 'none';
+        }
+
+        function toggleEntryContent(entryId) {
+            const entryEl = document.querySelector(`.journal-entry[data-entry-id="${entryId}"]`);
+            if (!entryEl) return;
+
+            const entry = entries.find(e => e.id === entryId);
+            if (!entry) return;
+
+            const textEl = entryEl.querySelector('[data-content="true"]');
+            const toggleBtn = entryEl.querySelector('[data-action="toggle-content"]');
+            if (!textEl || !toggleBtn) return;
+
+            const isExpanded = entryEl.dataset.expanded === 'true';
+            if (isExpanded) {
+                textEl.innerHTML = escapeHtml(getContentPreview(entry.content, 220));
+                toggleBtn.textContent = 'Read more';
+                entryEl.dataset.expanded = 'false';
+            } else {
+                textEl.innerHTML = entry.content;
+                toggleBtn.textContent = 'Show less';
+                entryEl.dataset.expanded = 'true';
+            }
+        }
+
+        function stripHtml(html) {
+            const div = document.createElement('div');
+            div.innerHTML = html || '';
+            return div.textContent || div.innerText || '';
+        }
+
+        function getContentPreview(html, maxLength = 220) {
+            const text = stripHtml(html);
+            if (text.length <= maxLength) return text;
+            return `${text.substring(0, maxLength).trim()}...`;
+        }
+
+        function hasMoreContent(html, maxLength = 220) {
+            return stripHtml(html).length > maxLength;
         }
 
         // Format date helper

@@ -109,7 +109,7 @@
                 <div class="tips-header">
                     <span>💡</span>
                     <h3>Tips for Achieving Your Goals</h3>
-                    <button class="btn btn-ghost btn-sm" onclick="loadGoalTips()" style="margin-left: auto;">Refresh</button>
+                    <button class="btn btn-ghost btn-sm" id="btn-refresh-tips" style="margin-left: auto;">Refresh</button>
                 </div>
                 <div class="tips-content" id="goals-tips-content">
                     Loading tips...
@@ -123,7 +123,7 @@
         <div class="modal">
             <div class="modal-header">
                 <h2 id="goal-modal-title">New Goal</h2>
-                <button class="modal-close" onclick="closeGoalModal()">&times;</button>
+                <button class="modal-close" id="btn-close-goal">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="goal-form">
@@ -202,6 +202,7 @@
             await checkAuth();
             loadGoals();
             setupTabs();
+            setupGoalActions();
             loadGoalTips();
             
             // Attach button event listeners
@@ -213,6 +214,7 @@
             });
             
             // Goal modal buttons
+            document.getElementById('btn-close-goal').addEventListener('click', closeGoalModal);
             document.getElementById('btn-add-milestone').addEventListener('click', addMilestoneInput);
             document.getElementById('btn-cancel-goal').addEventListener('click', closeGoalModal);
             document.getElementById('btn-save-goal').addEventListener('click', saveGoal);
@@ -232,7 +234,55 @@
             // Calendar navigation
             document.getElementById('btn-prev-month').addEventListener('click', () => navigateMonth(-1));
             document.getElementById('btn-next-month').addEventListener('click', () => navigateMonth(1));
+            
+            // Tips refresh button
+            document.getElementById('btn-refresh-tips').addEventListener('click', loadGoalTips);
         });
+
+        // Setup goal card actions using event delegation
+        function setupGoalActions() {
+            document.getElementById('goals-container').addEventListener('click', handleGoalAction);
+            document.getElementById('calendar-grid').addEventListener('click', handleCalendarGoalClick);
+        }
+
+        function handleGoalAction(e) {
+            const target = e.target.closest('[data-action]');
+            if (!target) return;
+
+            const goalCard = target.closest('[data-goal-id]');
+            if (!goalCard) return;
+
+            const goalId = parseInt(goalCard.dataset.goalId);
+            const goalProgress = parseInt(goalCard.dataset.goalProgress);
+            const action = target.dataset.action;
+
+            switch (action) {
+                case 'progress':
+                    openProgressModal(goalId, goalProgress);
+                    break;
+                case 'edit':
+                    editGoal(goalId);
+                    break;
+                case 'delete':
+                    deleteGoal(goalId);
+                    break;
+                case 'complete':
+                    completeGoal(goalId);
+                    break;
+                case 'toggle-milestone':
+                    const milestoneId = parseInt(target.dataset.milestoneId);
+                    toggleMilestone(goalId, milestoneId);
+                    break;
+            }
+        }
+
+        function handleCalendarGoalClick(e) {
+            const goalEl = e.target.closest('[data-calendar-goal-id]');
+            if (goalEl) {
+                const goalId = parseInt(goalEl.dataset.calendarGoalId);
+                editGoal(goalId);
+            }
+        }
 
         // Setup tabs
         function setupTabs() {
@@ -286,7 +336,7 @@
                 const daysClass = daysRemaining !== null ? (daysRemaining < 0 ? 'overdue' : daysRemaining <= 7 ? 'urgent' : 'normal') : '';
                 
                 return `
-                <div class="goal-card">
+                <div class="goal-card" data-goal-id="${goal.id}" data-goal-progress="${goal.progress}">
                     <div class="goal-header">
                         <div>
                             <span class="goal-type ${goal.goal_type}">${goal.goal_type}</span>
@@ -294,9 +344,9 @@
                             ${goal.description ? `<p style="color: var(--text-secondary); margin-top: 0.25rem;">${escapeHtml(goal.description)}</p>` : ''}
                         </div>
                         <div class="todo-actions" style="opacity: 1;">
-                            <button class="btn btn-ghost btn-sm" onclick="openProgressModal(${goal.id}, ${goal.progress})" title="Update Progress">📊</button>
-                            <button class="btn btn-ghost btn-sm" onclick="editGoal(${goal.id})" title="Edit">✏️</button>
-                            <button class="btn btn-ghost btn-sm" onclick="deleteGoal(${goal.id})" title="Delete">🗑️</button>
+                            <button class="btn btn-ghost btn-sm" data-action="progress" title="Update Progress">📊</button>
+                            <button class="btn btn-ghost btn-sm" data-action="edit" title="Edit">✏️</button>
+                            <button class="btn btn-ghost btn-sm" data-action="delete" title="Delete">🗑️</button>
                         </div>
                     </div>
 
@@ -322,7 +372,7 @@
                             <h4>Milestones (${goal.completed_milestones}/${goal.total_milestones})</h4>
                             ${goal.milestones.map(m => `
                                 <div class="milestone-item ${m.is_completed ? 'completed' : ''}" 
-                                     onclick="toggleMilestone(${goal.id}, ${m.id})" style="cursor: pointer;">
+                                     data-action="toggle-milestone" data-milestone-id="${m.id}" style="cursor: pointer;">
                                     <span>${m.is_completed ? '✅' : '⬜'}</span>
                                     <span>${escapeHtml(m.title)}</span>
                                 </div>
@@ -332,7 +382,7 @@
 
                     ${goal.status === 'active' && goal.progress === 100 ? `
                         <div style="margin-top: 1rem;">
-                            <button class="btn btn-success btn-sm btn-block" onclick="completeGoal(${goal.id})">
+                            <button class="btn btn-success btn-sm btn-block" data-action="complete">
                                 🎉 Mark as Completed
                             </button>
                         </div>
@@ -365,8 +415,11 @@
             div.style.cssText = 'display: flex; gap: 0.5rem; margin-bottom: 0.5rem;';
             div.innerHTML = `
                 <input type="text" class="form-control milestone-input" placeholder="Milestone..." value="${escapeHtml(value)}">
-                <button type="button" class="btn btn-ghost btn-sm" onclick="this.parentElement.remove()">✕</button>
+                <button type="button" class="btn btn-ghost btn-sm remove-milestone">✕</button>
             `;
+            div.querySelector('.remove-milestone').addEventListener('click', function() {
+                div.remove();
+            });
             list.appendChild(div);
         }
 
@@ -642,7 +695,7 @@
                         <div style="font-weight: ${isToday ? '700' : '500'}; font-size: 0.85rem; color: ${isToday ? 'var(--primary)' : 'var(--text-primary)'};">${day}</div>
                         <div style="margin-top: 0.25rem; display: flex; flex-direction: column; gap: 0.2rem;">
                             ${dayGoals.map(g => `
-                                <div class="calendar-goal" onclick="editGoal(${g.id})" style="font-size: 0.7rem; padding: 0.2rem 0.4rem; border-radius: 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: ${g.status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : g.goal_type === 'short-term' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(59, 130, 246, 0.15)'}; color: ${g.status === 'completed' ? '#22c55e' : g.goal_type === 'short-term' ? '#4ade80' : '#60a5fa'};" title="${escapeHtml(g.title)}">
+                                <div class="calendar-goal" data-calendar-goal-id="${g.id}" style="font-size: 0.7rem; padding: 0.2rem 0.4rem; border-radius: 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: ${g.status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : g.goal_type === 'short-term' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(59, 130, 246, 0.15)'}; color: ${g.status === 'completed' ? '#22c55e' : g.goal_type === 'short-term' ? '#4ade80' : '#60a5fa'};" title="${escapeHtml(g.title)}">
                                     ${g.status === 'completed' ? '✅' : g.goal_type === 'short-term' ? '🟢' : '🔵'} ${escapeHtml(g.title)}
                                 </div>
                             `).join('')}

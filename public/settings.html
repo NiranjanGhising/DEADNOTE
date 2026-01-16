@@ -121,7 +121,7 @@
                                 <h4>Change Password</h4>
                                 <p>Update your account password</p>
                             </div>
-                            <button class="btn btn-secondary btn-sm" onclick="openPasswordModal()">
+                            <button class="btn btn-secondary btn-sm" id="btn-open-password-modal">
                                 Change Password
                             </button>
                         </div>
@@ -141,7 +141,7 @@
                                 <h4>Export Data</h4>
                                 <p>Download all your data as JSON</p>
                             </div>
-                            <button class="btn btn-secondary btn-sm" onclick="exportData()">
+                            <button class="btn btn-secondary btn-sm" id="btn-export-data">
                                 📥 Export JSON
                             </button>
                         </div>
@@ -211,7 +211,7 @@
         <div class="modal" style="max-width: 400px;">
             <div class="modal-header">
                 <h2>Change Password</h2>
-                <button class="modal-close" onclick="closePasswordModal()">&times;</button>
+                <button class="modal-close" id="btn-close-password-modal">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="password-form">
@@ -230,8 +230,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closePasswordModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="changePassword()">Change Password</button>
+                <button class="btn btn-secondary" id="btn-cancel-password">Cancel</button>
+                <button class="btn btn-primary" id="btn-change-password">Change Password</button>
             </div>
         </div>
     </div>
@@ -246,6 +246,13 @@
             await checkAuth();
             loadNotificationSettings();
             loadDataStats();
+            
+            // Attach event listeners
+            document.getElementById('btn-open-password-modal').addEventListener('click', openPasswordModal);
+            document.getElementById('btn-export-data').addEventListener('click', exportData);
+            document.getElementById('btn-close-password-modal').addEventListener('click', closePasswordModal);
+            document.getElementById('btn-cancel-password').addEventListener('click', closePasswordModal);
+            document.getElementById('btn-change-password').addEventListener('click', changePassword);
         });
 
         // Load notification settings

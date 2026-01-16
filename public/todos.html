@@ -142,9 +142,9 @@
             <div id="calendar-view" style="display: none;">
                 <div class="card">
                     <div class="card-header">
-                        <button class="btn btn-ghost btn-sm" onclick="changeMonth(-1)">←</button>
+                        <button class="btn btn-ghost btn-sm" id="btn-prev-month">←</button>
                         <h3 id="calendar-month-year"></h3>
-                        <button class="btn btn-ghost btn-sm" onclick="changeMonth(1)">→</button>
+                        <button class="btn btn-ghost btn-sm" id="btn-next-month">→</button>
                     </div>
                     <div class="card-body">
                         <div class="calendar" id="calendar-grid"></div>
@@ -186,7 +186,7 @@
                 <div class="tips-header">
                     <span>💡</span>
                     <h3>Productivity Tips</h3>
-                    <button class="btn btn-ghost btn-sm" onclick="loadTodoTips()" style="margin-left: auto;">Refresh</button>
+                    <button class="btn btn-ghost btn-sm" id="btn-refresh-tips" style="margin-left: auto;">Refresh</button>
                 </div>
                 <div class="tips-content" id="todo-tips-content">
                     Loading tips...
@@ -266,6 +266,7 @@
             setupViewToggle();
             setupPeriodSelect();
             setupChartFilters();
+            setupTodoActions();
             
             // Attach button event listeners
             document.getElementById('btn-add-todo').addEventListener('click', function() {
@@ -280,12 +281,67 @@
             document.getElementById('btn-cancel-todo').addEventListener('click', closeTodoModal);
             document.getElementById('btn-save-todo').addEventListener('click', saveTodo);
             
+            // Tips refresh button
+            document.getElementById('btn-refresh-tips').addEventListener('click', loadTodoTips);
+            
             loadTodos();
             loadOverdue();
             loadStats();
             loadCompletionChart('week');
             loadTodoTips();
         });
+
+        // Setup todo item actions using event delegation
+        function setupTodoActions() {
+            // Delegate clicks on todo list
+            document.getElementById('todo-list').addEventListener('click', handleTodoAction);
+            document.getElementById('overdue-list').addEventListener('click', handleTodoAction);
+            document.getElementById('selected-day-todos').addEventListener('click', handleTodoAction);
+            
+            // Calendar navigation buttons
+            document.getElementById('btn-prev-month').addEventListener('click', () => changeMonth(-1));
+            document.getElementById('btn-next-month').addEventListener('click', () => changeMonth(1));
+            
+            // Calendar grid clicks (event delegation)
+            document.getElementById('calendar-grid').addEventListener('click', handleCalendarClick);
+        }
+
+        function handleTodoAction(e) {
+            // Handle add task button in empty state (from calendar view)
+            const addBtn = e.target.closest('[data-add-date]');
+            if (addBtn && addBtn.dataset.addDate) {
+                openTodoModal(addBtn.dataset.addDate);
+                return;
+            }
+            
+            const target = e.target.closest('[data-action]');
+            if (!target) return;
+
+            const todoItem = target.closest('[data-todo-id]');
+            if (!todoItem) return;
+
+            const todoId = parseInt(todoItem.dataset.todoId);
+            const action = target.dataset.action;
+
+            switch (action) {
+                case 'toggle':
+                    toggleTodo(todoId);
+                    break;
+                case 'edit':
+                    editTodo(todoId);
+                    break;
+                case 'delete':
+                    deleteTodo(todoId);
+                    break;
+            }
+        }
+
+        function handleCalendarClick(e) {
+            const dayCell = e.target.closest('[data-date]');
+            if (dayCell && dayCell.dataset.date) {
+                selectCalendarDay(dayCell.dataset.date);
+            }
+        }
 
         // Setup view toggle
         function setupViewToggle() {
@@ -444,9 +500,8 @@
         // Render todo item
         function renderTodoItem(todo) {
             return `
-                <li class="todo-item ${todo.is_completed ? 'completed' : ''}">
-                    <div class="todo-checkbox ${todo.is_completed ? 'checked' : ''}" 
-                         onclick="toggleTodo(${todo.id})"></div>
+                <li class="todo-item ${todo.is_completed ? 'completed' : ''}" data-todo-id="${todo.id}">
+                    <div class="todo-checkbox ${todo.is_completed ? 'checked' : ''}" data-action="toggle"></div>
                     <div class="todo-content">
                         <div class="todo-title">${escapeHtml(todo.title)}</div>
                         <div class="todo-meta">
@@ -455,8 +510,8 @@
                         </div>
                     </div>
                     <div class="todo-actions">
-                        <button class="btn btn-ghost btn-sm" onclick="editTodo(${todo.id})">✏️</button>
-                        <button class="btn btn-ghost btn-sm" onclick="deleteTodo(${todo.id})">🗑️</button>
+                        <button class="btn btn-ghost btn-sm" data-action="edit">✏️</button>
+                        <button class="btn btn-ghost btn-sm" data-action="delete">🗑️</button>
                     </div>
                 </li>
             `;
@@ -699,7 +754,7 @@
                 }
 
                 html += `
-                    <div class="${classes}" onclick="selectCalendarDay('${dateStr}')" title="${data ? `${data.completed}/${data.total} completed` : 'No tasks'}">
+                    <div class="${classes}" data-date="${dateStr}" title="${data ? `${data.completed}/${data.total} completed` : 'No tasks'}">
                         ${day}
                         ${dot}
                     </div>
@@ -726,7 +781,7 @@
                     container.innerHTML = `
                         <li class="empty-state">
                             <p>No tasks for this day</p>
-                            <button class="btn btn-primary btn-sm" onclick="openTodoModal('${dateStr}')" style="margin-top: 1rem;">
+                            <button class="btn btn-primary btn-sm" data-add-date="${dateStr}" style="margin-top: 1rem;">
                                 ➕ Add Task
                             </button>
                         </li>
